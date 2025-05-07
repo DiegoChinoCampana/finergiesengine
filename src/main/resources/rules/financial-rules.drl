@@ -1,0 +1,177 @@
+package rules
+
+import com.qip.model.Empresa;
+import com.qip.model.EvaluacionFinanciera;
+
+rule "Industria"
+when
+    $e : EvaluacionFinanciera( industria == 1 )
+then
+    $e.setPuntajeIndustria(2);
+end
+
+rule "Industria 2"
+when
+    $e : EvaluacionFinanciera( industria == 2 )
+then
+    $e.setPuntajeIndustria(1);
+end
+
+rule "Industria 3"
+when
+    $e : EvaluacionFinanciera( industria == 3 )
+then
+    $e.setPuntajeIndustria(0);
+end
+
+rule "SCORE NOSIS > 650"
+when
+    $e : EvaluacionFinanciera( scoreNosis > 650 )
+then
+    $e.setPuntajeScoreNosis(2);
+end
+
+rule "SCORE NOSIS entre 500 y 650"
+when
+    $e : EvaluacionFinanciera( scoreNosis > 500 && scoreNosis <= 650 )
+then
+    $e.setPuntajeScoreNosis(1);
+end
+
+rule "SCORE NOSIS menor a 500"
+when
+    $e : EvaluacionFinanciera( scoreNosis <= 500 )
+then
+    $e.setPuntajeScoreNosis(0);
+end
+
+rule "NFD/EBITDA > 4"
+when
+    $e : EvaluacionFinanciera( nfdEbitda > 4 )
+then
+    $e.setPuntajeNfdEbitda(0);
+end
+
+rule "NFD/EBITDA entre 1.5 y 4"
+when
+    $e : EvaluacionFinanciera( nfdEbitda >= 1.5 && nfdEbitda <= 4 )
+then
+    $e.setPuntajeNfdEbitda(1);
+end
+
+rule "NFD/EBITDA < 1.5"
+when
+    $e : EvaluacionFinanciera( nfdEbitda < 1.5 )
+then
+    $e.setPuntajeNfdEbitda(2);
+end
+
+rule "Cobertura de intereses > 1"
+when
+    $e : EvaluacionFinanciera( coberturaIntereses > 1 )
+then
+    $e.setPuntajeCoberturaIntereses(0);
+end
+
+rule "Cobertura de intereses <= 1"
+when
+    $e : EvaluacionFinanciera( coberturaIntereses <= 1 )
+then
+    $e.setPuntajeCoberturaIntereses(1);
+end
+
+rule "Margen EBITDA > 2.5"
+when
+    $e : EvaluacionFinanciera( margenEbitda > 2.5 )
+then
+    $e.setPuntajeMargenEbitda(2);
+end
+
+rule "Margen EBITDA entre 1 y 2.5"
+when
+    $e : EvaluacionFinanciera( margenEbitda >= 1 && margenEbitda <= 2.5 )
+then
+    $e.setPuntajeMargenEbitda(1);
+end
+
+rule "Margen EBITDA < 1"
+when
+    $e : EvaluacionFinanciera( margenEbitda < 1 )
+then
+    $e.setPuntajeMargenEbitda(0);
+end
+
+rule "Cantidad de bancos < 10"
+when
+    $e : EvaluacionFinanciera( cantidadBancos < 10 )
+then
+    $e.setPuntajeCantidadBancos(1);
+end
+
+rule "Cantidad de bancos >= 10"
+when
+    $e : EvaluacionFinanciera( cantidadBancos >= 10 )
+then
+    $e.setPuntajeCantidadBancos(0);
+end
+
+rule "SIT BCRA 1"
+when
+    $e : EvaluacionFinanciera( sitBcra == 1 )
+then
+    $e.setPuntajeSitBcra(1);
+end
+
+rule "SIT BCRA 2 a 5"
+when
+    $e : EvaluacionFinanciera( sitBcra >= 2 && sitBcra <= 5 )
+then
+    $e.setPuntajeSitBcra(0);
+end
+
+rule "Cheques rechazados NO"
+when
+    $e : EvaluacionFinanciera( chequesRechazados == false )
+then
+    $e.setPuntajeChequesRechazados(1);
+end
+
+rule "Cheques rechazados SI"
+when
+    $e : EvaluacionFinanciera( chequesRechazados == true )
+then
+    $e.setPuntajeChequesRechazados(0);
+end
+
+rule "Calculo Linea Credito"
+when
+    $e : EvaluacionFinanciera( )
+    eval( $e.getPuntajeTotal() >= 10 && $e.getPuntajeTotal() <= 12 )
+then
+    $e.setLineaCreditoOtorgable($e.getPromedioVentasMensualesPostbalance() * 3);
+end
+
+rule "Calculo Linea Credito 2 veces"
+when
+    $e : EvaluacionFinanciera( )
+    eval( $e.getPuntajeTotal() >= 7 && $e.getPuntajeTotal() < 10 )
+then
+    $e.setLineaCreditoOtorgable($e.getPromedioVentasMensualesPostbalance() * 2);
+end
+
+rule "Calculo Linea Credito 1 vez"
+when
+    $e : EvaluacionFinanciera( )
+    eval( $e.getPuntajeTotal() >= 5 && $e.getPuntajeTotal() < 7 )
+then
+    $e.setLineaCreditoOtorgable($e.getPromedioVentasMensualesPostbalance());
+end
+
+rule "Calculo Linea Credito con fianza"
+when
+    $e : EvaluacionFinanciera( )
+    eval( $e.getPuntajeTotal() < 5 )
+then
+    $e.setLineaCreditoOtorgable($e.getPromedioVentasMensualesPostbalance());
+    $e.setRequiereFianza(true);
+end
