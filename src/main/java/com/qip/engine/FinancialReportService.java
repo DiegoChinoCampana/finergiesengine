@@ -13,6 +13,7 @@ import com.qip.jpa.entities.PostBalance;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.text.NumberFormat;
 import java.util.Locale;
 
 
@@ -76,10 +77,10 @@ public class FinancialReportService {
         Table ratiosTable = new Table(econWidths);
         addHeaderRow(ratiosTable, String.valueOf(year1), String.valueOf(year2));
 
-        double nfd1 = (balance1.getDeudaBancariaTotal() + balance1.getDeudaFinancieraTotal()) - balance1.getCajaEInversionesCorrientes();
-        double nfd2 = (balance2.getDeudaBancariaTotal() + balance2.getDeudaFinancieraTotal()) - balance2.getCajaEInversionesCorrientes();
-        double tds1 = balance1.getDeudaBancariaPasivoCorriente() + balance1.getDeudaFinancieraPasivoCorriente() + balance1.getInteresesPagados();
-        double tds2 = balance2.getDeudaBancariaPasivoCorriente() + balance2.getDeudaFinancieraPasivoCorriente() + balance2.getInteresesPagados();
+        double nfd1 = balance1.getDeudaBancariaTotal()  - balance1.getCajaEInversionesCorrientes();
+        double nfd2 = balance2.getDeudaBancariaTotal()  - balance2.getCajaEInversionesCorrientes();
+        double tds1 = balance1.getDeudaFinancieraPasivoCorriente() + balance1.getInteresesPagados();
+        double tds2 = balance2.getDeudaFinancieraPasivoCorriente() + balance2.getInteresesPagados();
 
         addRow(ratiosTable, "Caja e Inversiones Corrientes", balance1.getCajaEInversionesCorrientes(), balance2.getCajaEInversionesCorrientes());
         addRow(ratiosTable, "Deuda Financiera", balance1.getDeudaFinancieraTotal(), balance2.getDeudaFinancieraTotal());
@@ -117,7 +118,7 @@ public class FinancialReportService {
         // Ventas y Deuda Postbalance
         document.add(new Paragraph("\nAnálisis de Ventas y Deuda Postbalance").setBold().setFontSize(14));
         Table ventasDeudaTable = new Table(econWidths);
-        addHeaderRow(ventasDeudaTable, String.valueOf(year1), String.valueOf(year2));
+        addHeaderRow(ventasDeudaTable, "Post último ejercicio", String.valueOf(year2));
 
 // Cálculos: Promedio de ventas mensuales postbalance
         double promedioVentasBalance1 = balance1.getVentasNetas() / 12;
@@ -145,12 +146,24 @@ public class FinancialReportService {
         double diasVentasPost2 = (promedioVentasBalance2 != 0) ? (deudaTotalBCRA2 / promedioVentasBalance2) * 30 : 0;
 
 // Agregar filas
-        addRow(ventasDeudaTable, "Promedio de ventas mensuales postbalance (miles de $)", postBalance1.getPromedioVentasMensuales(), postBalance2.getPromedioVentasMensuales());
+        addRow(ventasDeudaTable, "Promedio de ventas mensuales postbalance", postBalance1.getPromedioVentasMensuales(), postBalance2.getPromedioVentasMensuales());
         addRow(ventasDeudaTable, "Variación respecto último Balance", textoVariacion1, textoVariacion2);
-        addRow(ventasDeudaTable, "Deuda Total en el Sector Bancario (miles de $)", deudaTotalBCRA1, deudaTotalBCRA2);
+        addRow(ventasDeudaTable, "Deuda Total en el Sector Bancario", deudaTotalBCRA1, deudaTotalBCRA2);
         addRow(ventasDeudaTable, "Días de ventas postbalance", diasVentasPost1, diasVentasPost2);
 
         document.add(ventasDeudaTable);
+
+        ReglaAnalisisService analisisService = new ReglaAnalisisService();
+        ResultadoAnalisis resultado = analisisService.analizar(empresa, balance1, postBalance1);
+
+
+        NumberFormat formato = NumberFormat.getNumberInstance(new Locale("es", "AR"));
+        String montoFormateado = formato.format(resultado.lineaOtorgada);
+
+        document.add(new Paragraph("\nLíneas de créditos a otorgar").setBold().setFontSize(14));
+        document.add(new Paragraph("Linea Otorgada: " + montoFormateado));
+        document.add(new Paragraph("Puntaje Total: " + resultado.puntajeTotal));
+        document.add(new Paragraph("Comentario: " + resultado.comentario));
 
 
         document.close();
