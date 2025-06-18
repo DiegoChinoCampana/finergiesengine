@@ -13,6 +13,7 @@ public class FinancialReportController {
     @Autowired
     private FinancialReportBuilder reportGenerator;
 
+
     @GetMapping("/empresa/{empresa}/ejercicio/{anio}")
     public ResponseEntity<?> generarReporteFinanciero(
             @PathVariable String empresa,

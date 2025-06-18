@@ -1,62 +1,45 @@
 package com.qip.jpa.controller;
 
-
-import com.qip.jpa.entities.Industria;
-import com.qip.jpa.services.IndustriaService;
+import com.qip.jpa.entities.Cliente;
+import com.qip.jpa.services.ClienteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @RestController
-@RequestMapping("/api/industrias")
-public class IndustriaController {
+@RequestMapping("/api/clientes")
+public class ClienteController {
 
     @Autowired
-    private IndustriaService industriaService;
+    private ClienteService clienteService;
 
-    @PostMapping("/create")
-    public ResponseEntity<?> createIndustria(@RequestBody Industria industria) {
-        try {
-            Industria saved = industriaService.saveIndustria(industria);
-            return ResponseEntity.ok(saved);
-        } catch (DataIntegrityViolationException ex) {
-            Throwable rootCause = ex.getRootCause();
-            if (rootCause != null && rootCause.getMessage().contains("duplicate key value")) {
-                Pattern pattern = Pattern.compile("Key \\((.*?)\\)=\\((.*?)\\) already exists");
-                Matcher matcher = pattern.matcher(rootCause.getMessage());
-                if (matcher.find()) {
-                    String campo = matcher.group(1);
-                    String valor = matcher.group(2);
-                    return ResponseEntity.badRequest().body("Ya existe una industria con " + campo + " = '" + valor + "'.");
-                }
-                return ResponseEntity.badRequest().body("Ya existe un registro duplicado.");
-            }
-            return ResponseEntity.status(500).body("Error en la base de datos.");
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error inesperado: " + e.getMessage());
-        }
-    }
-
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/batch")
-    public ResponseEntity<?> createIndustrias(@RequestBody List<Industria> industrias) {
+    public ResponseEntity<?> createClientes(@RequestBody List<Cliente> clientes) {
+        List<Cliente> savedClientes = new ArrayList<>();
+
         try {
-            List<Industria> saved = industriaService.saveAllIndustrias(industrias);
-            return ResponseEntity.ok(saved);
+            for (Cliente cliente : clientes) {
+                Cliente saved = clienteService.saveCliente(cliente);
+                savedClientes.add(saved);
+            }
+            return ResponseEntity.ok(savedClientes);
+
         } catch (DataIntegrityViolationException ex) {
             Throwable rootCause = ex.getRootCause();
             if (rootCause != null && rootCause.getMessage().contains("duplicate key value")) {
-                // Extraer campo y valor duplicado
                 Pattern pattern = Pattern.compile("Key \\((.*?)\\)=\\((.*?)\\) already exists");
                 Matcher matcher = pattern.matcher(rootCause.getMessage());
                 if (matcher.find()) {
                     String campo = matcher.group(1);
                     String valor = matcher.group(2);
-                    return ResponseEntity.badRequest().body("Ya existe una industria con " + campo + " = '" + valor + "'.");
+                    return ResponseEntity.badRequest().body("Ya existe un cliente con " + campo + " = '" + valor + "'.");
                 }
                 return ResponseEntity.badRequest().body("Ya existe un registro duplicado.");
             }
@@ -66,29 +49,49 @@ public class IndustriaController {
         }
     }
 
-    @GetMapping("/{id}")
-    public Industria getIndustriaById(@PathVariable Long id) {
-        return industriaService.getIndustriaById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Industria with ID " + id + " not found"));
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping
+    public ResponseEntity<?> createCliente(@RequestBody Cliente cliente) {
+        try {
+            Cliente saved = clienteService.saveCliente(cliente);
+            return ResponseEntity.ok(saved);
+
+        } catch (DataIntegrityViolationException ex) {
+            Throwable rootCause = ex.getRootCause();
+            if (rootCause != null && rootCause.getMessage().contains("duplicate key value")) {
+                Pattern pattern = Pattern.compile("Key \\((.*?)\\)=\\((.*?)\\) already exists");
+                Matcher matcher = pattern.matcher(rootCause.getMessage());
+                if (matcher.find()) {
+                    String campo = matcher.group(1);
+                    String valor = matcher.group(2);
+                    return ResponseEntity.badRequest().body("Ya existe un cliente con " + campo + " = '" + valor + "'.");
+                }
+                return ResponseEntity.badRequest().body("Ya existe un registro duplicado.");
+            }
+            return ResponseEntity.status(500).body("Error en la base de datos.");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error inesperado: " + e.getMessage());
+        }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-    public List<Industria> getAllIndustrias() {
-        return industriaService.getAllIndustrias();
+    public ResponseEntity<?> getAllClientes() {
+        return ResponseEntity.ok(clienteService.getAllClientes());
     }
 
-    @PutMapping("/{id}")
-    public Industria updateIndustria(@PathVariable Long id, @RequestBody Industria industriaDetails) {
-        Industria industria = industriaService.getIndustriaById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Industria with ID " + id + " not found"));
-
-        industria.setNombre(industriaDetails.getNombre());
-        return industriaService.saveIndustria(industria);
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getClienteById(@PathVariable Long id) {
+        return clienteService.getClienteById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public String deleteIndustria(@PathVariable Long id) {
-        industriaService.deleteIndustria(id);
-        return "Industria with ID " + id + " deleted successfully";
+    public ResponseEntity<?> deleteCliente(@PathVariable Long id) {
+        clienteService.deleteCliente(id);
+        return ResponseEntity.ok("Cliente eliminado");
     }
 }
