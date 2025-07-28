@@ -1,0 +1,206 @@
+@page {
+    size: A4;
+    margin: 0
+}
+
+body { 
+    margin: 0;
+    font-family: Arial, Arial, Helvetica, sans-serif;
+    font-size: 10pt;
+    font-weight: 400;
+    color: #000;
+}
+
+
+.sheet-outer {
+    margin: 0;
+}
+
+.sheet {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    position: relative;
+    box-sizing: border-box;
+    page-break-after: always;
+    min-height: 100vh;
+}
+
+.sheet article {
+    padding: 2.5mm 5mm;
+}
+
+@media screen {
+    body { 
+        background: #e0e0e0 
+    }
+   
+    .sheet {
+        background: white;
+        box-shadow: 0 .5mm 2mm rgba(0,0,0,.3); 
+        margin: 5mm auto;
+    }
+}
+
+.sheet-outer.A4 .sheet { 
+    width: 210mm; 
+    height: 296mm 
+}
+
+.sheet.padding-5mm { padding: 5mm }
+
+
+@media print {
+    .sheet-outer.A4, .sheet-outer.A5.landscape { 
+        width: 210mm 
+    }
+
+    /* Prevent page breaks inside headers or large paragraphs */
+    h1, h2, h3, h4, h5, h6, p {
+        page-break-inside: avoid;
+    }
+}
+
+.disclaimer {
+    position: absolute;
+    left: auto;
+    bottom: 10mm;
+    right: auto;
+    padding: 5mm;
+    text-align: left;
+}
+
+.disclaimer .title,
+.disclaimer .content {
+    font-size: 9pt;
+    line-height: 1.25;
+    color: #666;
+    font-style: italic;
+}
+
+.main-logo, .intern-logo {
+    margin: 0;
+    padding: 0;
+}
+
+.main-logo > svg {
+    width: 200px;
+    height: auto;
+    max-width: 100%;
+}
+
+.intern-logo > svg {
+    width: 120px;
+    height: auto;
+    max-width: 100%;
+}
+
+h1, .h1, h2, .h2, h3, .h3, h4, .h4 {
+    margin: 0;
+}
+
+h1, .h1 {
+    font-size: 24pt;
+}
+
+h2, .h2 {
+    font-size: 19.2pt;
+}
+
+h3, .h3 {
+    font-size: 15.4pt;
+}
+
+h4, .h4 {
+    font-size: 13.3pt;
+}
+
+p, li, .exercise-dates {
+    font-size: 12pt;
+}
+
+small {
+    font-size: 9pt;
+}
+
+.hero-header {
+    padding: 30mm 0;
+}
+
+.exercise-dates { 
+    display: block;
+}
+
+.cuit {
+    font-size: 14pt;
+}
+
+.pesos {
+    color: #666;
+}
+
+.heading {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0 0 10mm 0;
+}
+
+.heading .page-count {
+           position: absolute;
+           top: 20px;
+           right: 20px;
+           font-size: 9pt;
+           color: #666;
+         }
+
+.table-block {
+    display: block;
+    margin: 0;
+    padding: 2.5mm 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 2rem;
+}
+
+th,
+td {
+    border: 1px solid #333;
+    padding: 8px 12px;
+    text-align: right;
+    font-size: 10pt;
+}
+    
+th {
+    background-color: #f0f0f0;
+    text-align: center;
+    font-weight: bold;
+}
+    
+td:first-child {
+    text-align: left;
+    font-weight: 500;
+}
+    
+caption {
+    caption-side: top;
+    text-align: center;
+    font-size: 14pt;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.credit-line {
+    margin: 8mm 0;
+    padding: 2.5mm;
+    font-size: 14pt;
+    font-weight: bold;
+    border: 4px solid #1B6EA0;
+    color: #1B6EA0;
+    text-align: center;
+}

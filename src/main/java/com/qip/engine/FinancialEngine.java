@@ -24,8 +24,8 @@ public class FinancialEngine {
         return (ventasNetas != 0) ? (resultadoNeto / ventasNetas) * 100 : 0;
     }
 
-    public static double calcularNFD(double deudaBancaria, double deudaFinanciera, double cajaEInversiones) {
-        return deudaBancaria + deudaFinanciera - cajaEInversiones;
+    public static double calcularNFD(double deudaBancariaPasivoCorriente,double deudaBancariaPasivoNoCorriente, double deudaFinancieraPasivoCorriente,double deudaFinancieraPasivoNoCorriente, double cajaEInversiones) {
+        return deudaBancariaPasivoCorriente + deudaBancariaPasivoNoCorriente + deudaFinancieraPasivoCorriente + deudaFinancieraPasivoNoCorriente - cajaEInversiones;
     }
 
     public static double calcularTDS(double deudaBancariaCP, double deudaFinancieraCP, double interesesPagados) {

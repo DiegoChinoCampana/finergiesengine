@@ -1,7 +1,9 @@
 package com.qip.jpa.controller;
 
+import com.qip.jpa.entities.Cliente;
 import com.qip.jpa.entities.Role;
 import com.qip.jpa.entities.User;
+import com.qip.jpa.repositories.ClienteRepository;
 import com.qip.jpa.repositories.UserRepository;
 import com.qip.jpa.services.auth.*;
 import com.qip.jpa.services.auth.dto.RegisterRequest;
@@ -19,6 +21,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Optional;
+
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -26,17 +30,19 @@ public class AuthController {
     private final JwtService jwtService;
     private final CustomUserDetailsService userService;
     private final UserRepository userRepository;
+    private final ClienteRepository clienteRepository; ;
     private final PasswordEncoder encoder;
 
     public AuthController(AuthenticationManager authManager,
                           JwtService jwtService,
                           CustomUserDetailsService uds,
-                          UserRepository userRepository,
+                          UserRepository userRepository, ClienteRepository clienteRepository,
                           PasswordEncoder encoder) {
         this.authManager = authManager;
         this.jwtService = jwtService;
         this.userService = uds;
         this.userRepository = userRepository;
+        this.clienteRepository = clienteRepository;
         this.encoder = encoder;
     }
 
@@ -47,10 +53,18 @@ public class AuthController {
                     .body("Email already in use");
         }
 
+        // Buscar el cliente por ID
+        Optional<Cliente> optionalCliente = clienteRepository.findById(request.getClient());
+        if (optionalCliente.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Cliente no encontrado con ID: " + request.getClient());
+        }
+
         User user = new User();
         user.setEmail(request.getEmail());
         user.setPassword(encoder.encode(request.getPassword()));
-        user.setRole(Role.USER); // o ADMIN si querés registrar admins
+        user.setRole(Role.USER);
+        user.setCliente(optionalCliente.get());// o ADMIN si querés registrar admins
 
         userRepository.save(user);
 

@@ -6,69 +6,76 @@ import com.qip.jpa.entities.PostBalance;
 
 public class ReglaAnalisisService {
 
-    public ResultadoAnalisis analizar(Empresa empresa, DatosDeBalance datosDeBalance, PostBalance postBalance) {
-        int puntajeTotal = 0;
+    public ResultadoAnalisis analizar(Empresa empresa, DatosDeBalance datos, PostBalance post) {
+        int puntaje = 0;
+        System.out.println("Analizando empresa: " + empresa.getNombre());
 
-        // 1. Categoría de industria
-        int categoriaIndustria = Integer.parseInt(empresa.getIndustria().getCategoria());
-        puntajeTotal += evaluarCategoriaIndustria(categoriaIndustria);
-
-        // 2. Score Nosis
+        // Categoría industria
+        puntaje += evaluarCategoriaIndustria(Integer.parseInt(empresa.getIndustria().getCategoria()));
+        System.out.println("Categoría industria: " + empresa.getIndustria().getCategoria() + ", Puntaje: " + puntaje);
+        // Score
         int score = empresa.getScoreNosis();
-        puntajeTotal += evaluarScoreNosis(score);
+        System.out.println("Score Nosis: " + score);
+        puntaje += evaluarScoreNosis(score);
+        System.out.println("Score Nosis evaluado, Puntaje: " + puntaje);
 
-        // 3. NFD / EBITDA
-        double nfd = (datosDeBalance.getDeudaBancariaTotal() + datosDeBalance.getDeudaFinancieraTotal()) - datosDeBalance.getCajaEInversionesCorrientes();
-        double ebitda = datosDeBalance.getResultadoOperativo() + datosDeBalance.getAmortizacionesYDepreciaciones();
-        puntajeTotal += evaluarNFDSobreEBITDA(nfd, ebitda);
+        // Ratios financieros
+        double nfd = datos.getDeudaFinancieraPasivoCorriente() + datos.getDeudaFinancieraPasivoNoCorriente()
+                + datos.getDeudaBancariaPasivoCorriente() + datos.getDeudaBancariaPasivoNoCorriente()
+                - datos.getCajaEInversionesCorrientes();
+        System.out.println("NFD calculado: " + nfd);
+        double ebitda = datos.getResultadoOperativo() + datos.getAmortizacionesYDepreciaciones();
+        System.out.println("EBITDA calculado: " + ebitda);
+        puntaje += evaluarNFDSobreEBITDA(nfd, ebitda);
+        System.out.println("NFD sobre EBITDA evaluado, Puntaje: " + puntaje);
+        puntaje += evaluarCoberturaIntereses(ebitda, datos.getInteresesPagados());
+        System.out.println("Cobertura de intereses evaluada, Puntaje: " + puntaje);
+        puntaje += evaluarMargenEBITDA(ebitda, datos.getVentasNetas());
+        System.out.println("Margen EBITDA evaluado, Puntaje: " + puntaje);
 
-        // 4. Cobertura de intereses
-        double intereses = datosDeBalance.getInteresesPagados();
-        puntajeTotal += evaluarCoberturaIntereses(ebitda, intereses);
-
-        // 5. Margen EBITDA
-        double ventas = datosDeBalance.getVentasNetas();
-        puntajeTotal += evaluarMargenEBITDA(ebitda, ventas);
-
-        // 6. Cantidad de bancos
-        int bancos = postBalance.getCantidadBancos();
-        puntajeTotal += bancos < 10 ? 1 : 0;
-
-        // 7. Situación BCRA
-        int situacionBCRA = Integer.parseInt(postBalance.getSituacionBCRA());
-        if (situacionBCRA == 1) {
-            puntajeTotal += 1;
-        } else {
+        // Bancos
+        puntaje += post.getCantidadBancos() < 10 ? 1 : 0;
+        System.out.println("Cantidad de bancos evaluada, Puntaje: " + puntaje);
+        // BCRA
+        if (!"1".equals(post.getSituacionBCRA())) {
             return ResultadoAnalisis.noOtorgarLinea("Situación BCRA desfavorable");
         }
-
-        // 8. Cheques rechazados
-        if (postBalance.getChequesRechazados()>0) {
+        puntaje += 1;
+        System.out.println("Situación BCRA evaluada, Puntaje: " + puntaje);
+        // Cheques rechazados
+        if (post.getChequesRechazados() > 0) {
             return ResultadoAnalisis.noOtorgarLinea("Cheques rechazados");
-        } else {
-            puntajeTotal += 1;
         }
+        puntaje += 1;
+        System.out.println("Cheques rechazados evaluados, Puntaje: " + puntaje);
+        // Línea a otorgar y garantía basada SOLO en puntaje total
+        double promedioVentas = post.getPromedioVentasMensuales();
+        System.out.println("Promedio de ventas mensuales: " + promedioVentas);
 
-        // Decisión final
-        double promedioVentasMensuales = postBalance.getPromedioVentasMensuales();
-        double lineaOtorgada;
+        double linea;
         String comentario;
+        boolean requiereGarantia;
 
-        if (puntajeTotal >= 10) {
-            lineaOtorgada = promedioVentasMensuales * 3;
-            comentario = "Se otorgan 3 veces promedio ventas";
-        } else if (puntajeTotal >= 7) {
-            lineaOtorgada = promedioVentasMensuales * 2;
-            comentario = "Se otorgan 2 veces promedio ventas";
-        } else if (puntajeTotal >= 5) {
-            lineaOtorgada = promedioVentasMensuales;
-            comentario = "Se otorga 1 vez promedio ventas";
+        if (puntaje >= 10 && puntaje <= 12) {
+            linea = promedioVentas * 1.5;
+            comentario = "Se otorgan 1,5 veces promedio ventas postbalance";
+            requiereGarantia = false;
+        } else if (puntaje >= 7) {
+            linea = promedioVentas;
+            comentario = "Se otorgan 1 vez promedio ventas postbalance";
+            requiereGarantia = false;
+        } else if (puntaje >= 5) {
+            linea = promedioVentas * 0.5;
+            comentario = "Se otorgan 0,5 veces promedio ventas postbalance";
+            requiereGarantia = false;
         } else {
-            lineaOtorgada = promedioVentasMensuales;
-            comentario = "Se otorga 1 vez promedio ventas con fianza de accionista";
+            linea = promedioVentas * 0.5;
+            comentario = "Se otorgan 0,5 veces promedio ventas postbalance con garantía a satisfacción";
+            requiereGarantia = true;
         }
 
-        return new ResultadoAnalisis(puntajeTotal, lineaOtorgada, comentario);
+        return new ResultadoAnalisis(puntaje, linea, comentario, requiereGarantia);
+
     }
 
     // Métodos auxiliares para evaluar criterios (ejemplos):
@@ -95,7 +102,7 @@ public class ReglaAnalisisService {
     }
 
     private int evaluarCoberturaIntereses(double ebitda, double intereses) {
-        return (intereses / ebitda) > 1 ? 0 : 1;
+        return (ebitda / intereses) > 1 ? 0 : 1;
     }
 
     private int evaluarMargenEBITDA(double ebitda, double ventas) {

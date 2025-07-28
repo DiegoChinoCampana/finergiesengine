@@ -15,4 +15,5 @@ public interface DatosDeBalanceRepository extends JpaRepository<DatosDeBalance, 
     @Query("SELECT d FROM DatosDeBalance d WHERE d.empresa = :empresa AND EXTRACT(YEAR FROM d.ejercicio) = :anio")
     Optional<DatosDeBalance> findByEmpresaAndAnio(@Param("empresa") Empresa empresa, @Param("anio") int anio);
 
+
 }

@@ -4,10 +4,13 @@ import com.qip.jpa.entities.DatosDeBalance;
 import com.qip.jpa.entities.Empresa;
 import com.qip.jpa.entities.Industria;
 import com.qip.jpa.entities.PostBalance;
+import com.qip.jpa.services.DatosDeBalanceService;
 import com.qip.jpa.services.EmpresaService;
 import com.qip.jpa.services.IndustriaService;
+import com.qip.jpa.services.PostBalanceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +29,12 @@ public class EmpresaController {
 
     @Autowired
     private EmpresaService empresaService;
+
+    @Autowired
+    private DatosDeBalanceService datosDeBalanceService;
+
+    @Autowired
+    private PostBalanceService postBalanceService;
 
     @Autowired
     private IndustriaService industriaService;
@@ -78,43 +87,91 @@ public class EmpresaController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/{empresaId}/balances")
+    public ResponseEntity<?> agregarBalances(
+            @PathVariable Long empresaId,
+            @RequestBody Empresa empresaConBalances) {
+        try {
+            Empresa empresa = empresaService.findById(empresaId);
+            if (empresa == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Empresa no encontrada.");
+            }
+
+            if (empresaConBalances.getDatosDeBalances() != null) {
+                for (DatosDeBalance db : empresaConBalances.getDatosDeBalances()) {
+                    db.setEmpresa(empresa);
+                    datosDeBalanceService.saveDatosDeBalance(db);
+                }
+            }
+
+            if (empresaConBalances.getPostBalances() != null) {
+                for (PostBalance pb : empresaConBalances.getPostBalances()) {
+                    pb.setEmpresa(empresa);
+                    postBalanceService.savePostBalance(pb);
+                }
+            }
+
+            return ResponseEntity.ok("Balances agregados correctamente.");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error inesperado: " + e.getMessage());
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<?> createEmpresa(@RequestBody Empresa empresa) {
         try {
+            if (empresaService.existsByNombre(empresa.getNombre())) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body("Ya existe una empresa con el nombre '" + empresa.getNombre() + "'.");
+            }
+
+            if (empresaService.existsByCuit(empresa.getCuit())) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body("Ya existe una empresa con el CUIT '" + empresa.getCuit() + "'.");
+            }
+
             String industriaNombre = empresa.getIndustria().getNombre();
             Industria industria = industriaService.getIndustriaByNombre(industriaNombre);
             empresa.setIndustria(industria);
 
-            if (empresa.getDatosDeBalances() != null) {
-                for (DatosDeBalance db : empresa.getDatosDeBalances()) {
-                    db.setEmpresa(empresa);
-                }
-            }
-
-            if (empresa.getPostBalances() != null) {
-                for (PostBalance pb : empresa.getPostBalances()) {
-                    pb.setEmpresa(empresa);
-                }
-            }
+            empresa.setDatosDeBalances(null);
+            empresa.setPostBalances(null);
 
             Empresa savedEmpresa = empresaService.saveEmpresa(empresa);
             return ResponseEntity.ok(savedEmpresa);
 
         } catch (DataIntegrityViolationException ex) {
-            Throwable rootCause = ex.getRootCause();
-            if (rootCause != null && rootCause.getMessage().contains("duplicate key value")) {
-                Pattern pattern = Pattern.compile("Key \\((.*?)\\)=\\((.*?)\\) already exists");
-                Matcher matcher = pattern.matcher(rootCause.getMessage());
-                if (matcher.find()) {
-                    String campo = matcher.group(1);
-                    String valor = matcher.group(2);
-                    return ResponseEntity.badRequest().body("Ya existe una empresa con " + campo + " = '" + valor + "'.");
-                }
-                return ResponseEntity.badRequest().body("Ya existe un registro duplicado.");
-            }
-            return ResponseEntity.status(500).body("Error en la base de datos.");
+            return handleDuplicateKeyException(ex);
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error inesperado: " + e.getMessage());
         }
     }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/cliente/{clienteId}")
+    public ResponseEntity<?> getEmpresasByCliente(@PathVariable Long clienteId) {
+        try {
+            List<Empresa> empresas = empresaService.getEmpresasByClienteId(clienteId);
+            return ResponseEntity.ok(empresas);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error al obtener las empresas: " + e.getMessage());
+        }
+    }
+
+    private ResponseEntity<String> handleDuplicateKeyException(DataIntegrityViolationException ex) {
+        Throwable rootCause = ex.getRootCause();
+        if (rootCause != null && rootCause.getMessage() != null && rootCause.getMessage().contains("duplicate key value")) {
+            Pattern pattern = Pattern.compile("Key \\((.*?)\\)=\\((.*?)\\) already exists");
+            Matcher matcher = pattern.matcher(rootCause.getMessage());
+            if (matcher.find()) {
+                String campo = matcher.group(1);
+                String valor = matcher.group(2);
+                return ResponseEntity.badRequest().body("Ya existe una empresa con " + campo + " = '" + valor + "'.");
+            }
+            return ResponseEntity.badRequest().body("Ya existe un registro duplicado.");
+        }
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error en la base de datos.");
+    }
+
 }
