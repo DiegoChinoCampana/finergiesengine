@@ -1,8 +1,12 @@
 package com.qip.jpa.services;
 
 
+import com.qip.jpa.entities.Cliente;
 import com.qip.jpa.entities.Empresa;
+import com.qip.jpa.entities.Role;
+import com.qip.jpa.entities.User;
 import com.qip.jpa.repositories.EmpresaRepository;
+import com.qip.jpa.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +17,9 @@ public class EmpresaService {
 
     @Autowired
     private EmpresaRepository empresaRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     public Empresa findById(Long id) {
         return empresaRepository.findById(id)
@@ -40,4 +47,6 @@ public class EmpresaService {
     public List<Empresa> getEmpresasByClienteId(Long clienteId) {
         return empresaRepository.findByClienteId(clienteId);
     }
+
+
 }

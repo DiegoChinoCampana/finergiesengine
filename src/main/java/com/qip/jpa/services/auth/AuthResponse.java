@@ -10,7 +10,21 @@ public class AuthResponse {
     }
 
     private String token;
-    public AuthResponse(String token) { this.token = token; }
+
+    public AuthResponse(String token, String userId) {
+        this.token = token;
+        this.userId = userId;
+    }
+
+    private String userId;
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
     // getter
 }
 

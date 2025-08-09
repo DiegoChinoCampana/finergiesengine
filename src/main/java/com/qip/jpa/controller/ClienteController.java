@@ -1,6 +1,7 @@
 package com.qip.jpa.controller;
 
 import com.qip.jpa.entities.Cliente;
+import com.qip.jpa.entities.User;
 import com.qip.jpa.services.ClienteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -18,6 +19,20 @@ public class ClienteController {
 
     @Autowired
     private ClienteService clienteService;
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/{clienteId}/usuarios")
+    public ResponseEntity<?> agregarUsuariosAEmpresa(
+            @PathVariable Long clienteId,
+            @RequestBody List<User> usuarios) {
+
+        try {
+            clienteService.agregarUsuariosACliente(clienteId, usuarios);
+            return ResponseEntity.ok("Usuarios agregados correctamente");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error al agregar usuarios: " + e.getMessage());
+        }
+    }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/batch")

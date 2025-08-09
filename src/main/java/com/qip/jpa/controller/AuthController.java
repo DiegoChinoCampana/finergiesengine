@@ -84,7 +84,16 @@ public class AuthController {
             UserDetails user = (UserDetails) authentication.getPrincipal();
             String token = jwtService.generateToken(user);
 
-            return ResponseEntity.ok(new AuthResponse(token));
+
+            // Buscar el User para obtener su ID
+            Optional<User> optionalUser = userRepository.findByEmail(user.getUsername());
+            if (optionalUser.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            String userId = optionalUser.get().getId().toString();
+
+            return ResponseEntity.ok(new AuthResponse(token,userId));
 
         } catch (AuthenticationException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();

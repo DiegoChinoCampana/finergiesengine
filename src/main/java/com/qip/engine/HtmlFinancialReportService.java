@@ -53,11 +53,12 @@ public class HtmlFinancialReportService {
         // Reemplazar placeholders
         html = html.replace("${empresa_nombre}", empresa.getNombre());
         html = html.replace("${cuit}", empresa.getCuit());
-        html = html.replace("${ejercicio anterior}", String.valueOf(balanceAnterior.getEjercicio().getYear()));
-        html = html.replace("${ejercicio actual}", String.valueOf(balanceActual.getEjercicio().getYear()));
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-        String fechaFormateada = balanceActual.getEjercicio().format(formatter);
-        html = html.replace("${fecha ejercicio actual}", fechaFormateada);
+        String fechaFormateadaActual = balanceActual.getEjercicio().format(formatter);
+        String fechaFormateadaAnterior = balanceAnterior.getEjercicio().format(formatter);
+        html = html.replace("${fecha ejercicio actual}", fechaFormateadaActual);
+        html = html.replace("${ejercicio anterior}", fechaFormateadaAnterior);
+        html = html.replace("${ejercicio actual}", fechaFormateadaActual);
 
 
         DecimalFormat nf = (DecimalFormat) NumberFormat.getNumberInstance(new Locale("es", "AR"));
@@ -99,13 +100,27 @@ public class HtmlFinancialReportService {
 
 
         double ebitda1 = balanceAnterior.getResultadoOperativo() + balanceAnterior.getAmortizacionesYDepreciaciones();
+        System.out.println("balanceAnterior.getResultadoOperativo() " + balanceAnterior.getResultadoOperativo());
+        System.out.println("balanceAnterior.getAmortizacionesYDepreciaciones() " + balanceAnterior.getAmortizacionesYDepreciaciones());
+        System.out.println("ebitda1 " + ebitda1);
+
         double ebitda2 = balanceActual.getResultadoOperativo() + balanceActual.getAmortizacionesYDepreciaciones();
+        System.out.println("balanceActual.getResultadoOperativo() " + balanceActual.getResultadoOperativo());
+        System.out.println("balanceActual.getAmortizacionesYDepreciaciones() " + balanceActual.getAmortizacionesYDepreciaciones());
+        System.out.println("ebitda2 " + ebitda2);
 
         html = html.replace("${ebitda anterior}", formatDecimal(ebitda1,nf))  ;
         html = html.replace("${ebitda actual}", formatDecimal(ebitda2,nf));
 
         html = html.replace("${margen ebitda anterior}", formatDecimal((ebitda1 / balanceAnterior.getVentasNetas()) * 100,nf))  ;
-        html = html.replace("${margen ebitda actual}", formatDecimal((ebitda1 / balanceActual.getVentasNetas()) * 100,nf))  ;
+        System.out.println("balanceAnterior.getVentasNetas() " + balanceAnterior.getVentasNetas());
+        System.out.println("ebitda1 / balanceAnterior.getVentasNetas() " + (ebitda1 / balanceAnterior.getVentasNetas()));
+        System.out.println("margen ebitda anterior " + (ebitda1 / balanceAnterior.getVentasNetas()) * 100);
+
+        html = html.replace("${margen ebitda actual}", formatDecimal((ebitda2 / balanceActual.getVentasNetas()) * 100,nf))  ;
+        System.out.println("balanceActual.getVentasNetas() " + balanceActual.getVentasNetas());
+        System.out.println("ebitda2 / balanceActual.getVentasNetas() " + (ebitda2 / balanceActual.getVentasNetas()));
+        System.out.println("margen ebitda actual " + (ebitda2 / balanceActual.getVentasNetas()) * 100);
 
         html = html.replace("${resultado neto anterior}", formatDecimal(balanceAnterior.getResultadoNeto(),nf))  ;
         html = html.replace("${resultado neto actual}", formatDecimal(balanceActual.getResultadoNeto(),nf))  ;
@@ -195,11 +210,14 @@ public class HtmlFinancialReportService {
         double tds1 = balanceAnterior.getDeudaBancariaPasivoCorriente() + balanceAnterior.getDeudaFinancieraPasivoCorriente() + balanceAnterior.getInteresesPagados();
         double tds2 = balanceActual.getDeudaBancariaPasivoCorriente() + balanceActual.getDeudaFinancieraPasivoCorriente() + balanceActual.getInteresesPagados();
 
+        double deudaFinancieraAnterior = nfd1 + balanceAnterior.getCajaEInversionesCorrientes();
+        double deudaFinancieraActual = nfd2 + balanceActual.getCajaEInversionesCorrientes();
+
         html = html.replace("${caja e inversiones corrientes anterior}", formatDecimal(balanceAnterior.getCajaEInversionesCorrientes(),nf)) ;
         html = html.replace("${caja e inversiones corrientes actual}", formatDecimal(balanceActual.getCajaEInversionesCorrientes(),nf)) ;
 
-        html = html.replace("${deuda financiera anterior}", formatDecimal(balanceAnterior.getDeudaFinancieraPasivoNoCorriente(),nf)) ;
-        html = html.replace("${deuda financiera actual}", formatDecimal(balanceActual.getDeudaFinancieraPasivoNoCorriente(),nf)) ;
+        html = html.replace("${deuda financiera anterior}", formatDecimal(deudaFinancieraAnterior,nf)) ;
+        html = html.replace("${deuda financiera actual}", formatDecimal(deudaFinancieraActual,nf)) ;
 
         html = html.replace("${nfd anterior}", formatDecimal(nfd1,nf)) ;
         html = html.replace("${nfd actual}", formatDecimal(nfd2,nf)) ;
@@ -209,11 +227,11 @@ public class HtmlFinancialReportService {
 
         String coberturaInteresesAnterior = (balanceAnterior.getInteresesPagados() == 0 || ebitda1 <= 0)
                 ? "No Aplica"
-                : formatDecimal(balanceAnterior.getInteresesPagados() / ebitda1,nf);
+                : formatDecimal( ebitda1 / balanceAnterior.getInteresesPagados(),nf);
 
         String coberturaInteresesActual = (balanceActual.getInteresesPagados() == 0 || ebitda2 <= 0)
                 ? "No Aplica"
-                : formatDecimal(balanceActual.getInteresesPagados() / ebitda2,nf);
+                : formatDecimal(ebitda2 / balanceActual.getInteresesPagados(),nf);
 
         html = html.replace("${cobertura de intereses anterior}", coberturaInteresesAnterior);
         html = html.replace("${cobertura de intereses actual}", coberturaInteresesActual);
@@ -293,6 +311,16 @@ public class HtmlFinancialReportService {
         }
         html = html.replace("${linea credito sugerida}", leyenda);
         System.out.println(html);
+
+        // Construcción segura con CDATA
+        StringBuilder detallePasos = new StringBuilder();
+        detallePasos.append("<ul>");
+        for(String paso : resultado.pasos){
+            detallePasos.append("<li><![CDATA[").append(paso).append("]]></li>");
+        }
+        detallePasos.append("</ul>");
+
+        html = html.replace("${detalle pasos analisis}", detallePasos.toString());
 
         // Convertir a PDF
         generatePdfFromHtml(html, outputPath);

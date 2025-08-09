@@ -1,13 +1,8 @@
 package com.qip.jpa.controller;
 
-import com.qip.jpa.entities.DatosDeBalance;
-import com.qip.jpa.entities.Empresa;
-import com.qip.jpa.entities.Industria;
-import com.qip.jpa.entities.PostBalance;
-import com.qip.jpa.services.DatosDeBalanceService;
-import com.qip.jpa.services.EmpresaService;
-import com.qip.jpa.services.IndustriaService;
-import com.qip.jpa.services.PostBalanceService;
+import com.qip.dtos.EmpresaDTO;
+import com.qip.jpa.entities.*;
+import com.qip.jpa.services.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -20,12 +15,16 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/empresas")
 public class EmpresaController {
+
+    @Autowired
+    private UserService userService;
 
     @Autowired
     private EmpresaService empresaService;
@@ -158,6 +157,28 @@ public class EmpresaController {
             return ResponseEntity.status(500).body("Error al obtener las empresas: " + e.getMessage());
         }
     }
+
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    @GetMapping("/usuario/{userId}")
+    public ResponseEntity<?> getEmpresasByUserId(@PathVariable Long userId) {
+        try {
+            Cliente cliente = userService.getClienteByUserId(userId);
+            Long clientId = cliente.getId();
+
+            List<Empresa> empresas = empresaService.getEmpresasByClienteId(clientId);
+            // Convertir a DTOs
+            List<EmpresaDTO> empresaDTOs = empresas.stream()
+                    .map(EmpresaDTO::new)
+                    .toList();
+
+            return ResponseEntity.ok(empresaDTOs);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error al obtener las empresas: " + e.getMessage());
+        }
+    }
+
+
+
 
     private ResponseEntity<String> handleDuplicateKeyException(DataIntegrityViolationException ex) {
         Throwable rootCause = ex.getRootCause();

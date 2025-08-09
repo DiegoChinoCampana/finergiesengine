@@ -1,8 +1,12 @@
 package com.qip.jpa.services;
 
 import com.qip.jpa.entities.Cliente;
+import com.qip.jpa.entities.Empresa;
+import com.qip.jpa.entities.Role;
+import com.qip.jpa.entities.User;
 import com.qip.jpa.repositories.ClienteRepository;
 import com.qip.jpa.repositories.EmpresaRepository;
+import com.qip.jpa.repositories.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,6 +16,11 @@ import java.util.Optional;
 
 @Service
 public class ClienteService {
+
+
+    @Autowired
+    private UserRepository userRepository;
+
 
     @Autowired
     private ClienteRepository clienteRepository;
@@ -46,5 +55,15 @@ public class ClienteService {
         clienteRepository.deleteById(id);
     }
 
+    public void agregarUsuariosACliente(Long clienteId, List<User> usuarios) {
+        Cliente cliente = clienteRepository.findById(clienteId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        for (User usuario : usuarios) {
+            usuario.setCliente(cliente); // Asociamos al mismo cliente de la empresa
+            usuario.setRole(Role.USER);  // Asignamos rol USER (según tu lógica)
+            userRepository.save(usuario); // Guardamos en la base
+        }
+    }
 
 }
